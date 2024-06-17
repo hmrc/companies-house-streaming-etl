@@ -1,0 +1,30 @@
+[tool.poetry]
+name = "companies-house-streaming-etl"
+version = "0.1.0"
+description = "Proof of concept for use of the Companies House Streaming API to be integrated with our ETL"
+authors = ["yasir-choudhry <91131643+yasir-choudhry@users.noreply.github.com>"]
+readme = "README.md"
+packages = [{ include = "companies_house_streaming_etl" }]
+
+[tool.poetry.dependencies]
+python = "3.10.10"
+
+# PySpark
+# we fixed version 3.3.0 so that it's compatible with our EMR cluster
+pyspark = "3.3.0"
+
+PyYAML = "6.0.1"
+requests = "2.32.3"
+pydantic = "*"
+wget = "*"
+envtoml = "*"
+
+[tool.poetry.group.dev.dependencies]
+asynctest = "0.13.0"
+
+[tool.poetry.scripts]
+run-streamer = "companies_house_streaming_etl.streamer.stream:start_streaming"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
