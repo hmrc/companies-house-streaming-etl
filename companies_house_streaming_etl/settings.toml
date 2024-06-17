@@ -1,0 +1,3 @@
+encoded_key = ""
+api_url = "https://stream.companieshouse.gov.uk/"
+write_mode = "hudi"
