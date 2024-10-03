@@ -35,6 +35,10 @@ In a terminal, run the streamer by executing the following:
 poetry run run-streamer
 ```
 
+View hudi table with:
+```bash
+poetry run view-hudi-data
+```
 
 ### License
 

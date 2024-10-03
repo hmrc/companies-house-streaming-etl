@@ -2,6 +2,7 @@
 
 import requests
 import json
+import logging
 from pyspark.sql import SparkSession
 
 from companies_house_streaming_etl import SettingsLoader, Settings
@@ -53,7 +54,7 @@ def stream(stream_settings: Settings, channel, consumer, spark: SparkSession):
 
 def start_streaming():
     settings = SettingsLoader.load_settings()
-    local_spark_session = create_local_spark_session()
+    local_spark_session = create_local_spark_session(hudi_version=settings.hudi_version, spark_version=settings.spark_version)
 
     channels = ["companies"]
 

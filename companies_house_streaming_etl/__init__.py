@@ -12,6 +12,8 @@ class Settings(BaseModel):
     encoded_key: str
     api_url: str
     write_mode: str
+    hudi_version: str
+    spark_version: str
 
 
 class SettingsLoader:
