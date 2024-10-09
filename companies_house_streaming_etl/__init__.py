@@ -12,6 +12,10 @@ class Settings(BaseModel):
     encoded_key: str
     api_url: str
     write_mode: str
+    write_location: str
+    write_bucket: str
+    hudi_version: str
+    spark_version: str
 
 
 class SettingsLoader:
@@ -22,10 +26,18 @@ class SettingsLoader:
         toml_file_path = f"{root_dir}/settings.toml"
         settings = envtoml.load(open(toml_file_path))
         run_settings = Settings(**settings)
-        run_settings.encoded_key = base64.b64encode(
-                bytes(yaml.safe_load(open(yaml_file_path, 'r').read())['stream_key'] + ':',
-                      'utf-8')
-            ).decode('utf-8')
+        run_settings.write_mode = os.environ["CH_WRITE_MODE"]
+        run_settings.write_location = os.environ["CH_WRITE_LOCATION"]
+        run_settings.write_bucket = os.environ["CH_WRITE_BUCKET"]
+
+        if run_settings.write_location == "local":
+            run_settings.encoded_key = base64.b64encode(
+                    bytes(yaml.safe_load(open(yaml_file_path, 'r').read())['stream_key'] + ':',
+                          'utf-8')
+                ).decode('utf-8')
+        else:
+            run_settings.encoded_key = os.environ["CH_STREAM_KEY"]
+
         return run_settings
 
 

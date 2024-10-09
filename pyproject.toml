@@ -10,8 +10,8 @@ packages = [{ include = "companies_house_streaming_etl" }]
 python = "3.10.10"
 
 # PySpark
-# we fixed version 3.3.0 so that it's compatible with our EMR cluster
-pyspark = "3.3.0"
+# we fixed version 3.5.0 so that it's compatible with our EMR cluster
+pyspark = "3.5.0"
 
 PyYAML = "6.0.1"
 requests = "2.32.3"
@@ -24,7 +24,8 @@ asynctest = "0.13.0"
 
 [tool.poetry.scripts]
 run-streamer = "companies_house_streaming_etl.streamer.stream:start_streaming"
+view-hudi-data = "companies_house_streaming_etl.streamer.view_hudi_data:display_hudi_table"
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core>=1.4.2"]
 build-backend = "poetry.core.masonry.api"

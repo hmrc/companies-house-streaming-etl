@@ -2,17 +2,23 @@
 
 import requests
 import json
+import logging
 from pyspark.sql import SparkSession
 
 from companies_house_streaming_etl import SettingsLoader, Settings
 from companies_house_streaming_etl.local_config.local_conf import create_local_spark_session, data_directory
 
 
-def print_consumer(line: str, spark: SparkSession):
+# class CompaniesHouseStream:
+#
+#     def __init__(self, output_location: str):
+#         self.output_location = output_location
+
+def print_consumer(line: str, spark: SparkSession, write_path: str):
     print(json.dumps(json.loads(line), indent=2))
 
 
-def hudi_consumer(line: str, spark: SparkSession):
+def hudi_consumer(line: str, spark: SparkSession, write_path: str):
     hudi_options = {
         'hoodie.table.name': "CompaniesHouseData",
         'hoodie.datasource.write.recordkey.field': 'resource_uri',
@@ -27,8 +33,8 @@ def hudi_consumer(line: str, spark: SparkSession):
     line_df = spark.read.json(spark.sparkContext.parallelize([json.dumps(json.loads(line))]), multiLine=True)
     line_df.write.format("org.apache.hudi") \
         .options(**hudi_options) \
-        .mode("append").save(str(data_directory()))
-    # TODO: use hudi streamer instead?
+        .mode("append").save(write_path)  # this should use the s3 link if not local
+    # TODO: use hudi streamer instead? - doesn't look like it supports this, only kafka etc
 
 
 def stream(stream_settings: Settings, channel, consumer, spark: SparkSession):
@@ -40,10 +46,12 @@ def stream(stream_settings: Settings, channel, consumer, spark: SparkSession):
         "authorization": f"Basic {stream_settings.encoded_key}"
     }
 
+    write_path = data_directory()
+
     with created_session.get(url_with_channel, headers=auth_header, stream=True) as api_responses:
         for response in api_responses.iter_lines():
             if response:
-                consumer(response, spark)
+                consumer(response, spark, write_path)
 
     # TODO: handle connection problems:
     #  - for 429s back off and sleep for 2 minutes
@@ -53,7 +61,7 @@ def stream(stream_settings: Settings, channel, consumer, spark: SparkSession):
 
 def start_streaming():
     settings = SettingsLoader.load_settings()
-    local_spark_session = create_local_spark_session()
+    local_spark_session = create_local_spark_session(hudi_version=settings.hudi_version, spark_version=settings.spark_version)
 
     channels = ["companies"]
 
