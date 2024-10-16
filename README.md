@@ -49,7 +49,7 @@ CH_WRITE_MODE="hudi" CH_WRITE_LOCATION="local" CH_WRITE_BUCKET="n/a" poetry run 
 ### if you want to run with Docker (useful for testing lambda deployment)
 
 #### If dependencies have changed
-Ensure that the requirements file has been updated too
+Ensure that the requirements file has been updated too (this is done to avoid complications with poetry in docker)
 ```bash
 poetry update
 ```
@@ -60,6 +60,11 @@ poetry export -f requirements.txt --without-hashes > requirements.txt
 make the docker image
 ```bash
 make build
+```
+
+run the docker image in a container
+```bash
+make run-local
 ```
 
 ### License

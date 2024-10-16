@@ -7,6 +7,8 @@ import yaml
 import envtoml
 from pydantic import BaseModel
 
+from streamer.credstash_loader import CredstashLoader
+
 
 class Settings(BaseModel):
     encoded_key: str
@@ -36,9 +38,13 @@ class SettingsLoader:
                           'utf-8')
                 ).decode('utf-8')
         else:
-            run_settings.encoded_key = os.environ["CH_STREAM_KEY"]
+            credstash_loader = CredstashLoader
+            run_settings.encoded_key = credstash_loader.companies_house_streaming_api_key
+            # run_settings.encoded_key = os.environ["CH_STREAM_KEY"]
 
         return run_settings
+
+    # TODO: Include credstash loader to get API key from credstash (we will give this lambda access to credstash in tf)
 
 
 class PathLoader:

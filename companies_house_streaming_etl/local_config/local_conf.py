@@ -30,7 +30,7 @@ def data_directory() -> str:
     write_location = os.environ["CH_WRITE_LOCATION"]
 
     if write_location == "s3":
-        return "s3 link here"
+        return "s3 link here"  # TODO put the link here
     elif write_location == "local":
         local_working_directory = local_working_directory_creator()
         local_jars_directory = local_working_directory / "data"

@@ -2,17 +2,13 @@
 
 import requests
 import json
+import tenacity
 import logging
 from pyspark.sql import SparkSession
 
 from companies_house_streaming_etl import SettingsLoader, Settings
 from companies_house_streaming_etl.local_config.local_conf import create_local_spark_session, data_directory
 
-
-# class CompaniesHouseStream:
-#
-#     def __init__(self, output_location: str):
-#         self.output_location = output_location
 
 def print_consumer(line: str, spark: SparkSession, write_path: str):
     print(json.dumps(json.loads(line), indent=2))
@@ -38,7 +34,7 @@ def hudi_consumer(line: str, spark: SparkSession, write_path: str):
 
 
 def stream(stream_settings: Settings, channel, consumer, spark: SparkSession):
-    created_session = requests.session()
+    created_session = requests.session()  # TODO: use tenacity.retry()
 
     url_with_channel = stream_settings.api_url + channel
 

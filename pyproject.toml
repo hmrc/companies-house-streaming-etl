@@ -13,6 +13,12 @@ python = "3.10.10"
 # we fixed version 3.5.0 so that it's compatible with our EMR cluster
 pyspark = "3.5.0"
 
+# credstsh for retrieving the API key
+credstash = "*"
+
+# tenacity for dealing with retries
+tenacity = "*"
+
 PyYAML = "6.0.1"
 requests = "2.32.3"
 pydantic = "*"
