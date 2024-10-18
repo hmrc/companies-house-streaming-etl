@@ -38,12 +38,7 @@ poetry install
 
 In a terminal, run the streamer by executing the following:
 ```bash
-CH_WRITE_MODE="hudi" CH_WRITE_LOCATION="local" CH_WRITE_BUCKET="n/a" poetry run run-streamer
-```
-
-View hudi table downloaded locally with:
-```bash
-CH_WRITE_MODE="hudi" CH_WRITE_LOCATION="local" CH_WRITE_BUCKET="n/a" poetry run view-hudi-data
+CH_DEBUG="true" CH_WRITE_LOCATION="local" CH_WRITE_BUCKET="n/a" CH_WRITE_PREFIX="n/a" poetry run run-streamer
 ```
 
 ### if you want to run with Docker (useful for testing lambda deployment)

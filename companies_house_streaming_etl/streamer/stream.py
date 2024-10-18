@@ -1,74 +1,119 @@
 #  Copyright 2024 HM Revenue & Customs
 
 import requests
-import json
-import tenacity
+import boto3
+import smart_open
+import orjson
 import logging
-from pyspark.sql import SparkSession
+from datetime import datetime, timedelta
+import time
 
 from companies_house_streaming_etl import SettingsLoader, Settings
-from companies_house_streaming_etl.local_config.local_conf import create_local_spark_session, data_directory
+from companies_house_streaming_etl.local_config.local_conf import data_directory
 
 
-def print_consumer(line: str, spark: SparkSession, write_path: str):
-    print(json.dumps(json.loads(line), indent=2))
+class RateLimited(Exception):
+    pass
 
 
-def hudi_consumer(line: str, spark: SparkSession, write_path: str):
-    hudi_options = {
-        'hoodie.table.name': "CompaniesHouseData",
-        'hoodie.datasource.write.recordkey.field': 'resource_uri',
-        'hoodie.datasource.write.partitionpath.field': 'resource_kind',
-        'hoodie.datasource.write.table.name': "CompaniesHouseData",
-        'hoodie.datasource.write.operation': 'upsert',
-        'hoodie.datasource.write.precombine.field': 'event.timepoint',
-        'hoodie.upsert.shuffle.parallelism': 2,
-        'hoodie.insert.shuffle.parallelism': 2,
-        'hoodie.datasource.write.reconcile.schema': True
-    }
-    line_df = spark.read.json(spark.sparkContext.parallelize([json.dumps(json.loads(line))]), multiLine=True)
-    line_df.write.format("org.apache.hudi") \
-        .options(**hudi_options) \
-        .mode("append").save(write_path)  # this should use the s3 link if not local
-    # TODO: use hudi streamer instead? - doesn't look like it supports this, only kafka etc
+class LambdaWillExpireSoon(Exception):
+    pass
 
 
-def stream(stream_settings: Settings, channel, consumer, spark: SparkSession):
+def stream(stream_settings: Settings, channel: str, debug_mode: bool):
     created_session = requests.session()  # TODO: use tenacity.retry()
 
-    url_with_channel = stream_settings.api_url + channel
+    url = stream_settings.api_url + channel + "?timepoint=" + read_timepoint(stream_settings)
 
     auth_header = {
         "authorization": f"Basic {stream_settings.encoded_key}"
     }
 
-    write_path = data_directory()
+    write_path = data_directory(stream_settings) + "/" + str(int(time.time()))  # filenames by epoch second
 
-    with created_session.get(url_with_channel, headers=auth_header, stream=True) as api_responses:
-        for response in api_responses.iter_lines():
-            if response:
-                consumer(response, spark, write_path)
+    response_count = 0
+    latest_timepoint = 0  # used to keep track of where to continue when re-connecting
+    # Lambda max runtime is 900s, assume 200s required to start streaming and write to s3 after done
+    max_allowed_time = datetime.now() + timedelta(seconds=30)
 
-    # TODO: handle connection problems:
-    #  - for 429s back off and sleep for 2 minutes
-    #  - other disconnections, usual retry with an incrementing sleep time
-    #  - keep track of last successful response time and use this with ?timepoint=<epoch-seconds> in the url to catch up
+    try:
+        with created_session.get(url, headers=auth_header, stream=True) as api_responses:
+            if api_responses.status_code == 429:
+                raise RateLimited
+            elif api_responses.status_code == 200:
+                with smart_open.open(write_path, 'wb') as file_out:
+                    for response in api_responses.iter_lines():
+                        if datetime.now() > max_allowed_time:
+                            logging.info("lambda will time out, restart instead")
+                            created_session.close()
+                            raise LambdaWillExpireSoon
+                        else:
+                            if debug_mode:
+                                logging.info(
+                                    f"time not yet up, currently have this much remaining: {max_allowed_time - datetime.now()}")
+                        if response and (response != "\n"):
+                            response_count += 1
+                            if debug_mode:
+                                logging.info(response)
+                            file_out.write(response)
+                            file_out.write(b"\n")
+                            response_timepoint = orjson.loads(response)["event"]["timepoint"]
+                            if response_timepoint > latest_timepoint:
+                                latest_timepoint = response_timepoint
+                                print(f"new timepoint: {latest_timepoint}")
+            else:
+                logging.error(f"non-200 status code: {api_responses.status_code}")
+                raise ConnectionError
+    except LambdaWillExpireSoon:
+        logging.info("timed out to start a new lambda")
+        logging.info(f"number of responses from {channel} written to s3: {response_count}")
+        logging.info(f"new latest timepoin: {latest_timepoint}")
+        # write updated timepoint file
+        write_timepoint(stream_settings, str(latest_timepoint))
+    except RateLimited:
+        logging.error("status code 429 we are rate limited - hold off until next scheduled lambda")
+
+
+def write_timepoint(settings: Settings, timepoint: str):
+    if settings.write_location == "s3":
+        s3 = boto3.resource('s3')
+        s3.Object(settings.write_bucket, settings.write_prefix + "/timepoint").put(Body=timepoint)
+    elif settings.write_location == "local":
+        with open(data_directory(settings) + "/timepoint", "w+") as timepoint_file:
+            timepoint_file.write(timepoint)
+    else:
+        raise NotImplementedError
+
+
+def read_timepoint(settings: Settings) -> str:
+    if settings.write_location == "s3":
+        s3 = boto3.resource('s3')
+        return s3.Object(settings.write_bucket, settings.write_prefix + "/timepoint").get()['Body'].read()
+    elif settings.write_location == "local":
+        with open(data_directory(settings) + "/timepoint", "r") as timepoint_file:
+            return timepoint_file.read()
+    else:
+        raise NotImplementedError
 
 
 def start_streaming():
+    """
+    Connect to the streaming api with timepoint and store all valid responses in a list for 700s (lambda timeout is 900)
+    Write to S3 as we go
+    keep track of the latest [event][timepoint]
+    write to s3 (a file named after the latest timepoint and new line delimited with all responses)
+    update a timepoint file to contain the latest timepoint
+
+    :return:
+    """
     settings = SettingsLoader.load_settings()
-    local_spark_session = create_local_spark_session(hudi_version=settings.hudi_version, spark_version=settings.spark_version)
 
-    channels = ["companies"]
+    channel = "companies"  # TODO include more channels
 
-    match settings.write_mode:
-        case "print":
-            # TODO: call all the channels in parallel (use multiprocessing) - to do this with the same session
-            for channel in channels:
-                stream(settings, channel, print_consumer, local_spark_session)
-        case "hudi":
-            for channel in channels:
-                stream(settings, channel, hudi_consumer, local_spark_session)
-        case _:
-            # TODO: include consumers for postgres, other types?
-            raise RuntimeError("Write mode not supported")
+    if settings.debug_mode == "true":
+        logging.basicConfig(level=logging.DEBUG)
+        debug_mode = True
+    else:
+        debug_mode = False
+
+    stream(settings, channel, debug_mode)

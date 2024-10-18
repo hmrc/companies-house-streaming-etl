@@ -7,17 +7,16 @@ import yaml
 import envtoml
 from pydantic import BaseModel
 
-from streamer.credstash_loader import CredstashLoader
+from companies_house_streaming_etl.streamer.credstash_loader import CredstashLoader
 
 
 class Settings(BaseModel):
     encoded_key: str
     api_url: str
-    write_mode: str
+    debug_mode: str
     write_location: str
     write_bucket: str
-    hudi_version: str
-    spark_version: str
+    write_prefix: str
 
 
 class SettingsLoader:
@@ -28,9 +27,10 @@ class SettingsLoader:
         toml_file_path = f"{root_dir}/settings.toml"
         settings = envtoml.load(open(toml_file_path))
         run_settings = Settings(**settings)
-        run_settings.write_mode = os.environ["CH_WRITE_MODE"]
+        run_settings.debug_mode = os.environ["CH_DEBUG"]
         run_settings.write_location = os.environ["CH_WRITE_LOCATION"]
         run_settings.write_bucket = os.environ["CH_WRITE_BUCKET"]
+        run_settings.write_prefix = os.environ["CH_WRITE_PREFIX"]
 
         if run_settings.write_location == "local":
             run_settings.encoded_key = base64.b64encode(
@@ -40,11 +40,8 @@ class SettingsLoader:
         else:
             credstash_loader = CredstashLoader
             run_settings.encoded_key = credstash_loader.companies_house_streaming_api_key
-            # run_settings.encoded_key = os.environ["CH_STREAM_KEY"]
 
         return run_settings
-
-    # TODO: Include credstash loader to get API key from credstash (we will give this lambda access to credstash in tf)
 
 
 class PathLoader:

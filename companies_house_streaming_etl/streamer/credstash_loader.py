@@ -1,3 +1,5 @@
+#  Copyright 2024 HM Revenue & Customs
+
 import logging
 
 import credstash

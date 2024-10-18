@@ -11,7 +11,7 @@ python = "3.10.10"
 
 # PySpark
 # we fixed version 3.5.0 so that it's compatible with our EMR cluster
-pyspark = "3.5.0"
+# pyspark = "3.5.0" # no longer used, writing plain to s3 and hudi later without lambda
 
 # credstsh for retrieving the API key
 credstash = "*"
@@ -22,15 +22,13 @@ tenacity = "*"
 PyYAML = "6.0.1"
 requests = "2.32.3"
 pydantic = "*"
-wget = "*"
+boto3 = "*"
 envtoml = "*"
-
-[tool.poetry.group.dev.dependencies]
-asynctest = "0.13.0"
+orjson = "*"
+smart-open = "*"
 
 [tool.poetry.scripts]
 run-streamer = "companies_house_streaming_etl.streamer.stream:start_streaming"
-view-hudi-data = "companies_house_streaming_etl.streamer.view_hudi_data:display_hudi_table"
 
 [build-system]
 requires = ["poetry-core>=1.4.2"]
