@@ -2,13 +2,9 @@ ECR_URL=727065427295.dkr.ecr.eu-west-2.amazonaws.com
 IMAGE_NAME=cip-insights-reputation/companies-house-streaming-etl-lambda
 TEST_IMAGE_NAME=$(IMAGE_NAME)-test
 SHELL=/bin/bash
-BLACK_IMAGE=pyfound/black:23.9.1
 
 version_file := .version
 VERSION := $(shell cat ${version_file})
-
-fmt: venv
-	docker run --rm --volume $(PWD):/code --workdir /code $(BLACK_IMAGE) black src/ tests/
 
 build:
 	docker build --file Dockerfile -t $(IMAGE_NAME) .
@@ -26,9 +22,9 @@ run-local:
 #	--entrypoint /bin/sh \
 #	$(TEST_IMAGE_NAME) \
 #	-c "python -m pytest -o log_cli=true tests"
-
-ci/check-fmt:
-	docker run --rm --volume $(WORKSPACE):/code --workdir /code $(BLACK_IMAGE) black --check companies_house_streaming_etl tests/
+#
+#ci/check-fmt:
+#	docker run --rm --volume $(WORKSPACE):/code --workdir /code $(BLACK_IMAGE) black --check companies_house_streaming_etl tests/
 
 ci/build: .version build
 
@@ -43,8 +39,3 @@ ci/publish:
 	docker push $(ECR_URL)/$(IMAGE_NAME):v$(VERSION)
 
 ci/release: ci/publish
-
-clean:
-	rm -f .version
-	docker rmi -f $$(docker images --format '{{.Repository}}:{{.Tag}}' | grep "$(IMAGE_NAME)") || true
-	docker rmi -f $(BLACK_IMAGE)

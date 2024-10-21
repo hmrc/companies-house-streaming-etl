@@ -9,11 +9,6 @@ pipeline {
         sh('make ci/build')
       }
     }
-//     stage('Test docker container') {
-//       steps {
-//         sh('make ci/test')
-//       }
-//     }
     stage('Publish and tag docker container') {
       steps {
         sh('make ci/release')
@@ -22,11 +17,6 @@ pipeline {
             currentBuild.description = "Release: v" + build_version
         }
       }
-    }
-  }
-  post {
-    always {
-      sh('make clean')
     }
   }
 }
