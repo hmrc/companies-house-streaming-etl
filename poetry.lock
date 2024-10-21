@@ -727,22 +727,6 @@ webhdfs = ["requests"]
 zst = ["zstandard"]
 
 [[package]]
-name = "tenacity"
-version = "9.0.0"
-description = "Retry code until it succeeds"
-category = "main"
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "tenacity-9.0.0-py3-none-any.whl", hash = "sha256:93de0c98785b27fcf659856aa9f54bfbd399e29969b0621bc7f762bd441b4539"},
-    {file = "tenacity-9.0.0.tar.gz", hash = "sha256:807f37ca97d62aa361264d497b0e31e92b8027044942bfa756160d908320d73b"},
-]
-
-[package.extras]
-doc = ["reno", "sphinx"]
-test = ["pytest", "tornado (>=4.5)", "typeguard"]
-
-[[package]]
 name = "toml"
 version = "0.10.2"
 description = "Python Library for Tom's Obvious, Minimal Language"
@@ -867,4 +851,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "3.10.10"
-content-hash = "d7b007b00fb6e67f0bd14c5fde03873e62e1d6307780fcaa4a4c68ba13401125"
+content-hash = "b7f5a53694536616dce669378a7b75ff94e0d42a633077f56effc427bc005c26"

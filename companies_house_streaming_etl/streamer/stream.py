@@ -60,14 +60,13 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
                             response_timepoint = orjson.loads(response)["event"]["timepoint"]
                             if response_timepoint > latest_timepoint:
                                 latest_timepoint = response_timepoint
-                                print(f"new timepoint: {latest_timepoint}")
             else:
                 logging.error(f"non-200 status code: {api_responses.status_code}")
                 raise ConnectionError
     except LambdaWillExpireSoon:
         logging.info("timed out to start a new lambda")
         logging.info(f"number of responses from {channel} written to s3: {response_count}")
-        logging.info(f"new latest timepoin: {latest_timepoint}")
+        logging.info(f"new latest timepoint: {latest_timepoint}")
         # write updated timepoint file
         write_timepoint(stream_settings, str(latest_timepoint))
     except RateLimited:
