@@ -11,7 +11,7 @@ build:
 
 # only used for local testing
 run-local:
-	docker run --env CH_WRITE_MODE="hudi" --env CH_WRITE_LOCATION="local" --env CH_WRITE_BUCKET="n/a" -i $(IMAGE_NAME)
+	docker run --env CH_DEBUG="true" --env CH_WRITE_LOCATION="local" --env CH_WRITE_BUCKET="n/a" --env CH_WRITE_PREFIX="n/a" -i $(IMAGE_NAME)
 
 # tests currently not implemented
 #test-build:
