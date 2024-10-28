@@ -1,0 +1,5 @@
+encoded_key = ""
+api_url = "https://stream.companieshouse.gov.uk/"
+write_mode = "hudi"
+hudi_version = "0.15.0"
+spark_version = "3.5"
