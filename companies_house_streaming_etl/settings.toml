@@ -1,0 +1,7 @@
+encoded_key = ""
+api_url = "https://stream.companieshouse.gov.uk/"
+write_mode = ""
+debug_mode = ""
+write_location = ""
+write_bucket = ""
+write_prefix = ""
