@@ -1,5 +1,5 @@
 ECR_URL=727065427295.dkr.ecr.eu-west-2.amazonaws.com
-IMAGE_NAME=cip-insights-reputation/companies-house-streaming-etl-lambda
+IMAGE_NAME=cip-insights-reputation/companies-house-streaming-lambda
 TEST_IMAGE_NAME=$(IMAGE_NAME)-test
 SHELL=/bin/bash
 
