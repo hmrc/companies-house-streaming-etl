@@ -95,7 +95,7 @@ def read_timepoint(settings: Settings) -> str:
         raise NotImplementedError
 
 
-def start_streaming():
+def start_streaming(_, _2):
     """
     Connect to the streaming api with timepoint and store all valid responses in a list for 700s (lambda timeout is 900)
     Write to S3 as we go
