@@ -87,7 +87,7 @@ def write_timepoint(settings: Settings, timepoint: str):
 def read_timepoint(settings: Settings) -> str:
     if settings.write_location == "s3":
         s3 = boto3.resource('s3')
-        return s3.Object(settings.write_bucket, settings.write_prefix + "/timepoint").get()['Body'].read()
+        return str(s3.Object(settings.write_bucket, settings.write_prefix + "/timepoint").get()['Body'].read())
     elif settings.write_location == "local":
         with open(data_directory(settings) + "/timepoint", "r") as timepoint_file:
             return timepoint_file.read()
