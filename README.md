@@ -46,10 +46,7 @@ CH_DEBUG="true" CH_WRITE_LOCATION="local" CH_WRITE_BUCKET="n/a" CH_WRITE_PREFIX=
 #### If dependencies have changed
 Ensure that the requirements file has been updated too (this is done to avoid complications with poetry in docker)
 ```bash
-poetry update
-```
-```bash
-poetry export -f requirements.txt --without-hashes > requirements.txt
+make create-requirements-txt
 ```
 
 make the docker image

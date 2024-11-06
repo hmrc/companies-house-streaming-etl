@@ -12,6 +12,12 @@ build:
 # only used for local testing
 run-local:
 	docker run --env CH_DEBUG="true" --env CH_WRITE_LOCATION="local" --env CH_WRITE_BUCKET="n/a" --env CH_WRITE_PREFIX="n/a" -i $(IMAGE_NAME)
+create-requirements-txt:
+	poetry update
+	poetry install
+	poetry export -f requirements.txt --without-hashes > unusedrequirements.txt
+	sed 's/;.*//' unusedrequirements.txt > requirements.txt # remove python version requirement set by poetry (causing issues in CI)
+	rm unusedrequirements.txt
 
 # tests currently not implemented
 #test-build:
