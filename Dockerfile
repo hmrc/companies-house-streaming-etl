@@ -4,7 +4,7 @@ FROM public.ecr.aws/lambda/python:3.10
 COPY requirements.txt ${LAMBDA_TASK_ROOT}
 
 # Install the specified packages
-RUN pip install -r requirements.txt
+RUN pip3 install -r requirements.txt
 
 # Copy function code
 COPY companies_house_streaming_etl ${LAMBDA_TASK_ROOT}/companies_house_streaming_etl
