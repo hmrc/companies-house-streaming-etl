@@ -21,13 +21,17 @@ class LambdaWillExpireSoon(Exception):
 
 
 def stream(stream_settings: Settings, channel: str, debug_mode: bool):
+    log_info_if_debug(f"creating session", debug_mode)
     created_session = requests.session()  # TODO: use tenacity.retry()
 
     url = stream_settings.api_url + channel + "?timepoint=" + read_timepoint(stream_settings)
+    log_info_if_debug(f"url: {url}", debug_mode)
 
     auth_header = {
         "authorization": f"Basic {stream_settings.encoded_key}"
     }
+
+    log_info_if_debug(f"auth header: {auth_header}", debug_mode)
 
     write_path = data_directory(stream_settings) + "/" + str(int(time.time()))  # filenames by epoch second
 
@@ -36,7 +40,7 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
     response_count = 0
     latest_timepoint = 0  # used to keep track of where to continue when re-connecting
     # Lambda max runtime is 900s, assume 200s required to start streaming and write to s3 after done
-    max_allowed_time = datetime.now() + timedelta(seconds=30)
+    max_allowed_time = datetime.now() + timedelta(seconds=60)
 
     try:
         with created_session.get(url, headers=auth_header, stream=True) as api_responses:
@@ -99,7 +103,11 @@ def read_timepoint(settings: Settings) -> str:
 
 def log_info_if_debug(log_string: str, debug: bool):
     if debug:
-        logging.info(log_string)
+        logger = logging.getLogger(__name__)
+        logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO,
+                            force=True,
+                            datefmt='%Y-%m-%d  %H:%M:%S')
+        logger.info(log_string)
 
 
 def start_streaming(_, _2):
@@ -112,6 +120,10 @@ def start_streaming(_, _2):
 
     :return:
     """
+    logger = logging.getLogger(__name__)
+    logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO, force=True,
+                        datefmt='%Y-%m-%d  %H:%M:%S')
+    logger.info("loading stream settings")
     settings = SettingsLoader.load_settings()
 
     channel = "companies"  # TODO include more channels
@@ -119,6 +131,7 @@ def start_streaming(_, _2):
     if settings.debug_mode == "true":
         logging.basicConfig(level=logging.DEBUG)
         debug_mode = True
+        logger.info("debug mode set", debug_mode)
     else:
         debug_mode = False
 
