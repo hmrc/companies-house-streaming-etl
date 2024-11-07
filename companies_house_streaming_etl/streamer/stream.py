@@ -31,6 +31,8 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
 
     write_path = data_directory(stream_settings) + "/" + str(int(time.time()))  # filenames by epoch second
 
+    log_info_if_debug(f"write path: {write_path}", debug_mode)
+
     response_count = 0
     latest_timepoint = 0  # used to keep track of where to continue when re-connecting
     # Lambda max runtime is 900s, assume 200s required to start streaming and write to s3 after done
@@ -41,24 +43,24 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
             if api_responses.status_code == 429:
                 raise RateLimited
             elif api_responses.status_code == 200:
+                log_info_if_debug("200 response", debug_mode)
                 with smart_open.open(write_path, 'wb') as file_out:
+                    log_info_if_debug("smart open", debug_mode)
                     for response in api_responses.iter_lines():
                         if datetime.now() > max_allowed_time:
                             logging.info("lambda will time out, restart instead")
                             created_session.close()
                             raise LambdaWillExpireSoon
                         else:
-                            if debug_mode:
-                                logging.info(
-                                    f"time not yet up, currently have this much remaining: {max_allowed_time - datetime.now()}")
+                            log_info_if_debug(f"time not yet up, currently have this much remaining: {max_allowed_time - datetime.now()}", debug_mode)
                         if response and (response != "\n"):
                             response_count += 1
-                            if debug_mode:
-                                logging.info(response)
+                            log_info_if_debug(response, debug_mode)
                             file_out.write(response)
                             file_out.write(b"\n")
                             response_timepoint = orjson.loads(response)["event"]["timepoint"]
                             if response_timepoint > latest_timepoint:
+                                log_info_if_debug("new latest timepoint: ", response_timepoint)
                                 latest_timepoint = response_timepoint
             else:
                 logging.error(f"non-200 status code: {api_responses.status_code}")
@@ -93,6 +95,11 @@ def read_timepoint(settings: Settings) -> str:
             return timepoint_file.read()
     else:
         raise NotImplementedError
+
+
+def log_info_if_debug(log_string: str, debug: bool):
+    if debug:
+        logging.info(log_string)
 
 
 def start_streaming(_, _2):
