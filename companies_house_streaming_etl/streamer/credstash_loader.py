@@ -4,8 +4,6 @@ import logging
 
 import credstash
 
-from companies_house_streaming_etl.streamer.stream import log_info_if_debug
-
 
 class CredstashLoader:
     @property
@@ -22,3 +20,12 @@ class CredstashLoader:
         return credstash.getSecret(
             name=secret_name, context={"role": role}, profile_name=profile_name
         )
+
+
+def log_info_if_debug(log_string: str, debug: bool):
+    if debug:
+        logger = logging.getLogger(__name__)
+        logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO,
+                            force=True,
+                            datefmt='%Y-%m-%d  %H:%M:%S')
+        logger.info(log_string)
