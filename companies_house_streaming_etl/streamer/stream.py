@@ -28,7 +28,7 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
     log_info_if_debug(f"url: {url}", debug_mode)
 
     auth_header = {
-        "authorization": f"Basic {stream_settings.encoded_key}"
+        "authorization": f"Basic {str(stream_settings.encoded_key)}"
     }
 
     log_info_if_debug(f"auth header: {auth_header}", debug_mode)
@@ -40,7 +40,7 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
     response_count = 0
     latest_timepoint = 0  # used to keep track of where to continue when re-connecting
     # Lambda max runtime is 900s, assume 200s required to start streaming and write to s3 after done
-    max_allowed_time = datetime.now() + timedelta(seconds=60)
+    max_allowed_time = datetime.now() + timedelta(seconds=700)
 
     try:
         with created_session.get(url, headers=auth_header, stream=True) as api_responses:
@@ -52,7 +52,7 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
                     log_info_if_debug("smart open", debug_mode)
                     for response in api_responses.iter_lines():
                         if datetime.now() > max_allowed_time:
-                            logging.info("lambda will time out, restart instead")
+                            log_info_if_debug("lambda will time out, restart instead", True)
                             created_session.close()
                             raise LambdaWillExpireSoon
                         else:
@@ -67,16 +67,16 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
                                 log_info_if_debug("new latest timepoint: ", response_timepoint)
                                 latest_timepoint = response_timepoint
             else:
-                logging.error(f"non-200 status code: {api_responses.status_code}")
+                log_info_if_debug(f"non-200 status code: {api_responses.status_code}", True)
                 raise ConnectionError
     except LambdaWillExpireSoon:
-        logging.info("timed out to start a new lambda")
-        logging.info(f"number of responses from {channel} written to s3: {response_count}")
-        logging.info(f"new latest timepoint: {latest_timepoint}")
+        log_info_if_debug("timed out to start a new lambda", True)
+        log_info_if_debug(f"number of responses from {channel} written to s3: {response_count}", True)
+        log_info_if_debug(f"new latest timepoint: {latest_timepoint}", True)
         # write updated timepoint file
         write_timepoint(stream_settings, str(latest_timepoint))
     except RateLimited:
-        logging.error("status code 429 we are rate limited - hold off until next scheduled lambda")
+        log_info_if_debug("status code 429 we are rate limited - hold off until next scheduled lambda", True)
 
 
 def write_timepoint(settings: Settings, timepoint: str):
@@ -129,9 +129,8 @@ def start_streaming(_, _2):
     channel = "companies"  # TODO include more channels
 
     if settings.debug_mode == "true":
-        logging.basicConfig(level=logging.DEBUG)
         debug_mode = True
-        logger.info("debug mode set", debug_mode)
+        logger.info("debug mode set")
     else:
         debug_mode = False
 
