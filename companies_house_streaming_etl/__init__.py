@@ -7,7 +7,9 @@ import yaml
 import envtoml
 from pydantic import BaseModel
 
-from companies_house_streaming_etl.streamer.credstash_loader import CredstashLoader
+# from companies_house_streaming_etl.streamer.credstash_loader import CredstashLoader
+import credstash
+import logging
 
 
 class Settings(BaseModel):
@@ -34,14 +36,27 @@ class SettingsLoader:
 
         if run_settings.write_location == "local":
             run_settings.encoded_key = base64.b64encode(
-                    bytes(yaml.safe_load(open(yaml_file_path, 'r').read())['stream_key'] + ':',
-                          'utf-8')
-                ).decode('utf-8')
+                bytes(yaml.safe_load(open(yaml_file_path, 'r').read())['stream_key'] + ':',
+                      'utf-8')
+            ).decode('utf-8')
         else:
-            credstash_loader = CredstashLoader
-            run_settings.encoded_key = credstash_loader.companies_house_streaming_api_key
+            # credstash_loader = CredstashLoader
+            streamkey = credstash.getSecret(
+                name="companies_house_streaming_api_key", context={"role": "companies_house"}, profile_name=None
+            )
+            log_info_if_debug(streamkey, True)
+            run_settings.encoded_key = streamkey
 
         return run_settings
+
+
+def log_info_if_debug(log_string: str, debug: bool):
+    if debug:
+        logger = logging.getLogger(__name__)
+        logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO,
+                            force=True,
+                            datefmt='%Y-%m-%d  %H:%M:%S')
+        logger.info(log_string)
 
 
 class PathLoader:
