@@ -7,6 +7,7 @@ import orjson
 import logging
 from datetime import datetime, timedelta
 import time
+import base64
 
 from companies_house_streaming_etl import SettingsLoader, Settings
 from companies_house_streaming_etl.local_config.local_conf import data_directory
@@ -32,6 +33,9 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
     }
 
     log_info_if_debug(f"auth header: {auth_header}", debug_mode)
+    log_info_if_debug(f"{stream_settings.encoded_key}", debug_mode)
+    log_info_if_debug(f"{str(stream_settings.encoded_key)}", debug_mode)
+    log_info_if_debug(f"{base64.b64encode(bytes(str(stream_settings.encoded_key) + ':','utf-8')).decode('utf-8')}", debug_mode)
 
     write_path = data_directory(stream_settings) + "/" + str(int(time.time()))  # filenames by epoch second
 
@@ -44,6 +48,7 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
 
     try:
         with created_session.get(url, headers=auth_header, stream=True) as api_responses:
+            log_info_if_debug(f"response status code: {api_responses.status_code}", debug_mode)
             if api_responses.status_code == 429:
                 raise RateLimited
             elif api_responses.status_code == 200:
