@@ -56,7 +56,9 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
 
     log_info_if_debug("after test req", debug_mode)
 
-    test_response = requests.get(url, headers=auth_header, stream=True)
+    test_response = requests.get(stream_settings.api_url + channel, headers=auth_header, stream=True)
+
+    log_info_if_debug(str(test_response.status_code), debug_mode)
 
     for test_item in test_response:
         if test_item:
