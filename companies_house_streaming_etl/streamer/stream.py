@@ -56,6 +56,22 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
 
     log_info_if_debug("after test req", debug_mode)
 
+    test_response0 = requests.get(stream_settings.api_url + channel)
+
+    log_info_if_debug(str(test_response0.status_code), debug_mode)
+
+    log_info_if_debug(str(test_response0.text), debug_mode)
+
+    log_info_if_debug("test_1", debug_mode)
+
+    test_response1 = requests.get(stream_settings.api_url + channel, stream=True)
+
+    log_info_if_debug(str(test_response1.status_code), debug_mode)
+
+    log_info_if_debug(str(test_response1.text), debug_mode)
+
+    log_info_if_debug("test_2", debug_mode)
+
     test_response = requests.get(stream_settings.api_url + channel, headers=auth_header, stream=True)
 
     log_info_if_debug(str(test_response.status_code), debug_mode)
