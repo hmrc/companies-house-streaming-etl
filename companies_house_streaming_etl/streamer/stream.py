@@ -49,7 +49,6 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
     log_info_if_debug("after test req1", debug_mode)
     log_info_if_debug(str(r.content), debug_mode)
 
-    test_response = requests.get(url, headers=auth_header, stream=True)
 
     r = requests.get('https://api.github.com/events')
     log_info_if_debug(str(r.status_code), debug_mode)
@@ -57,6 +56,7 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
 
     log_info_if_debug("after test req", debug_mode)
 
+    test_response = requests.get(url, headers=auth_header, stream=True)
 
     for test_item in test_response:
         if test_item:
