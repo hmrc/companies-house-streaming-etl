@@ -44,8 +44,7 @@ class SettingsLoader:
             streamkey = credstash.getSecret(
                 name="companies_house_streaming_api_key", context={"role": "companies_house"}, profile_name=None
             )
-            log_info_if_debug(streamkey, True)
-            run_settings.encoded_key = streamkey
+            run_settings.encoded_key = base64.b64encode(bytes(str(streamkey) + ':', 'utf-8')).decode('utf-8')
 
         return run_settings
 

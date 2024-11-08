@@ -12,6 +12,7 @@ import base64
 from companies_house_streaming_etl import SettingsLoader, Settings
 from companies_house_streaming_etl.local_config.local_conf import data_directory
 
+import httpx  # test to see why request lib isn't working - maybe VPC problem
 
 class RateLimited(Exception):
     pass
@@ -29,7 +30,7 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
     log_info_if_debug(f"url: {url}", debug_mode)
 
     auth_header = {
-        "authorization": f"Basic {base64.b64encode(bytes(str(stream_settings.encoded_key) + ':', 'utf-8')).decode('utf-8')}"
+        "authorization": f"Basic {stream_settings.encoded_key}"
     }
 
     log_info_if_debug(f"auth header: {auth_header}", debug_mode)
@@ -44,11 +45,17 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
     max_allowed_time = datetime.now() + timedelta(seconds=700)
     log_info_if_debug(f"max allowed time: {max_allowed_time}", debug_mode)
 
+    r = httpx.get("https://download.companieshouse.gov.uk")
+    log_info_if_debug("after test req1", debug_mode)
+    log_info_if_debug(str(r.content), debug_mode)
+
     test_response = requests.get(url, headers=auth_header, stream=True)
 
     r = requests.get('https://api.github.com/events')
     log_info_if_debug(str(r.status_code), debug_mode)
     log_info_if_debug(str(r.text), debug_mode)
+
+    log_info_if_debug("after test req", debug_mode)
 
 
     for test_item in test_response:
