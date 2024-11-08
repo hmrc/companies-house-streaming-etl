@@ -42,8 +42,18 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
     latest_timepoint = 0  # used to keep track of where to continue when re-connecting
     # Lambda max runtime is 900s, assume 200s required to start streaming and write to s3 after done
     max_allowed_time = datetime.now() + timedelta(seconds=700)
+    log_info_if_debug(f"max allowed time: {max_allowed_time}", debug_mode)
+
+    test_response = requests.get(url, headers=auth_header, stream=True)
+
+    for test_item in test_response:
+        if test_item:
+            log_info_if_debug("in test_response", debug_mode)
+            log_info_if_debug(str(test_item), debug_mode)
+            break
 
     try:
+        log_info_if_debug(f"in try", debug_mode)
         with created_session.get(url, headers=auth_header, stream=True) as api_responses:
             log_info_if_debug(f"response status code: {api_responses.status_code}", debug_mode)
             if api_responses.status_code == 429:
