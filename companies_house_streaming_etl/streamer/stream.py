@@ -49,78 +49,83 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
     log_info_if_debug("after test req1", debug_mode)
     log_info_if_debug(str(r.content), debug_mode)
 
-
+    log_info_if_debug("testing https://api.github.com/events", debug_mode)
     r = requests.get('https://api.github.com/events')
     log_info_if_debug(str(r.status_code), debug_mode)
     log_info_if_debug(str(r.text), debug_mode)
-
     log_info_if_debug("after test req", debug_mode)
 
-    test_response0 = requests.get(stream_settings.api_url + channel)
+    log_info_if_debug("testing https://api.github.com/events", debug_mode)
+    r = requests.get('https://www.google.com', timeout=50)
+    log_info_if_debug(str(r.status_code), debug_mode)
+    log_info_if_debug(str(r.text), debug_mode)
+    log_info_if_debug("after test req2", debug_mode)
 
+    log_info_if_debug("testing https://aws.amazon.com/", debug_mode)
+    test_responsex = requests.get("https://aws.amazon.com/", timeout=50)
+    log_info_if_debug(str(test_responsex.status_code), debug_mode)
+    log_info_if_debug(str(test_responsex.text), debug_mode)
+    log_info_if_debug("test_0", debug_mode)
+
+    url_no_timepoint = stream_settings.api_url + channel
+    log_info_if_debug(f"testing: {url_no_timepoint}", debug_mode)
+    test_response0 = requests.get(url_no_timepoint, timeout=50)
     log_info_if_debug(str(test_response0.status_code), debug_mode)
-
     log_info_if_debug(str(test_response0.text), debug_mode)
-
     log_info_if_debug("test_1", debug_mode)
 
-    test_response1 = requests.get(stream_settings.api_url + channel, stream=True)
-
+    test_response1 = requests.get(stream_settings.api_url + channel, stream=True, timeout=50)
     log_info_if_debug(str(test_response1.status_code), debug_mode)
-
     log_info_if_debug(str(test_response1.text), debug_mode)
-
     log_info_if_debug("test_2", debug_mode)
 
     test_response = requests.get(stream_settings.api_url + channel, headers=auth_header, stream=True)
-
     log_info_if_debug(str(test_response.status_code), debug_mode)
-
     for test_item in test_response:
         if test_item:
             log_info_if_debug("in test_response", debug_mode)
             log_info_if_debug(str(test_item), debug_mode)
             break
 
-    try:
-        log_info_if_debug(f"in try", debug_mode)
-        with created_session.get(url, headers=auth_header, stream=True) as api_responses:
-            log_info_if_debug(f"response status code: {api_responses.status_code}", debug_mode)
-            if api_responses.status_code == 429:
-                raise RateLimited
-            elif api_responses.status_code == 200:
-                log_info_if_debug("200 response", debug_mode)
-                with smart_open.open(write_path, 'wb') as file_out:
-                    log_info_if_debug("smart open", debug_mode)
-                    for response in api_responses.iter_lines():
-                        if datetime.now() > max_allowed_time:
-                            log_info_if_debug("lambda will time out, restart instead", True)
-                            created_session.close()
-                            raise LambdaWillExpireSoon
-                        else:
-                            log_info_if_debug(
-                                f"time not yet up, currently have this much remaining: {max_allowed_time - datetime.now()}",
-                                debug_mode)
-                        if response and (response != "\n"):
-                            response_count += 1
-                            log_info_if_debug(response, debug_mode)
-                            file_out.write(response)
-                            file_out.write(b"\n")
-                            response_timepoint = orjson.loads(response)["event"]["timepoint"]
-                            if response_timepoint > latest_timepoint:
-                                log_info_if_debug("new latest timepoint: ", response_timepoint)
-                                latest_timepoint = response_timepoint
-            else:
-                log_info_if_debug(f"non-200 status code: {api_responses.status_code}", True)
-                raise ConnectionError
-    except LambdaWillExpireSoon:
-        log_info_if_debug("timed out to start a new lambda", True)
-        log_info_if_debug(f"number of responses from {channel} written to s3: {response_count}", True)
-        log_info_if_debug(f"new latest timepoint: {latest_timepoint}", True)
-        # write updated timepoint file
-        write_timepoint(stream_settings, str(latest_timepoint))
-    except RateLimited:
-        log_info_if_debug("status code 429 we are rate limited - hold off until next scheduled lambda", True)
+    # try:
+    #     log_info_if_debug(f"in try", debug_mode)
+    #     with created_session.get(url, headers=auth_header, stream=True) as api_responses:
+    #         log_info_if_debug(f"response status code: {api_responses.status_code}", debug_mode)
+    #         if api_responses.status_code == 429:
+    #             raise RateLimited
+    #         elif api_responses.status_code == 200:
+    #             log_info_if_debug("200 response", debug_mode)
+    #             with smart_open.open(write_path, 'wb') as file_out:
+    #                 log_info_if_debug("smart open", debug_mode)
+    #                 for response in api_responses.iter_lines():
+    #                     if datetime.now() > max_allowed_time:
+    #                         log_info_if_debug("lambda will time out, restart instead", True)
+    #                         created_session.close()
+    #                         raise LambdaWillExpireSoon
+    #                     else:
+    #                         log_info_if_debug(
+    #                             f"time not yet up, currently have this much remaining: {max_allowed_time - datetime.now()}",
+    #                             debug_mode)
+    #                     if response and (response != "\n"):
+    #                         response_count += 1
+    #                         log_info_if_debug(response, debug_mode)
+    #                         file_out.write(response)
+    #                         file_out.write(b"\n")
+    #                         response_timepoint = orjson.loads(response)["event"]["timepoint"]
+    #                         if response_timepoint > latest_timepoint:
+    #                             log_info_if_debug("new latest timepoint: ", response_timepoint)
+    #                             latest_timepoint = response_timepoint
+    #         else:
+    #             log_info_if_debug(f"non-200 status code: {api_responses.status_code}", True)
+    #             raise ConnectionError
+    # except LambdaWillExpireSoon:
+    #     log_info_if_debug("timed out to start a new lambda", True)
+    #     log_info_if_debug(f"number of responses from {channel} written to s3: {response_count}", True)
+    #     log_info_if_debug(f"new latest timepoint: {latest_timepoint}", True)
+    #     # write updated timepoint file
+    #     write_timepoint(stream_settings, str(latest_timepoint))
+    # except RateLimited:
+    #     log_info_if_debug("status code 429 we are rate limited - hold off until next scheduled lambda", True)
 
 
 def write_timepoint(settings: Settings, timepoint: str):
