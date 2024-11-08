@@ -46,6 +46,11 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
 
     test_response = requests.get(url, headers=auth_header, stream=True)
 
+    r = requests.get('https://api.github.com/events')
+    log_info_if_debug(str(r.status_code), debug_mode)
+    log_info_if_debug(str(r.text), debug_mode)
+
+
     for test_item in test_response:
         if test_item:
             log_info_if_debug("in test_response", debug_mode)
