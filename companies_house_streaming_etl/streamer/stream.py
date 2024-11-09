@@ -45,9 +45,14 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
     max_allowed_time = datetime.now() + timedelta(seconds=700)
     log_info_if_debug(f"max allowed time: {max_allowed_time}", debug_mode)
 
-    r = httpx.get("https://download.companieshouse.gov.uk")
-    # log_info_if_debug(str(r.content), debug_mode)
-    log_info_if_debug(str(r.status_code), debug_mode)
+    # r = httpx.get("https://download.companieshouse.gov.uk")
+    # # log_info_if_debug(str(r.content), debug_mode)
+    # log_info_if_debug(str(r.status_code), debug_mode)
+
+    log_info_if_debug("testing https://download.companieshouse.gov.uk", debug_mode)
+    test_responsez = requests.get("https://download.companieshouse.gov.uk", timeout=50)
+    log_info_if_debug(str(test_responsez.status_code), debug_mode)
+    log_info_if_debug(str(test_responsez.text), debug_mode)
 
     log_info_if_debug("testing https://catfact.ninja/fact", debug_mode)
     test_responsey = requests.get("https://catfact.ninja/fact", timeout=50)
@@ -58,11 +63,6 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
     r = requests.get('https://api.github.com/events')
     log_info_if_debug(str(r.status_code), debug_mode)
     # log_info_if_debug(str(r.text), debug_mode)
-
-    log_info_if_debug("testing https://download.companieshouse.gov.uk", debug_mode)
-    test_responsez = requests.get("https://download.companieshouse.gov.uk", timeout=50)
-    log_info_if_debug(str(test_responsez.status_code), debug_mode)
-    log_info_if_debug(str(test_responsez.text), debug_mode)
 
     log_info_if_debug("testing https://aws.amazon.com/", debug_mode)
     test_responsex = requests.get("https://aws.amazon.com/", timeout=50)
