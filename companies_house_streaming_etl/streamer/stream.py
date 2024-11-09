@@ -49,6 +49,11 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
     # # log_info_if_debug(str(r.content), debug_mode)
     # log_info_if_debug(str(r.status_code), debug_mode)
 
+    log_info_if_debug("testing https://api.company-information.service.gov.uk/company/1234 with httpx", debug_mode)
+    r = httpx.get("https://api.company-information.service.gov.uk/company/1234")
+    # log_info_if_debug(str(r.content), debug_mode)
+    log_info_if_debug(str(r.status_code), debug_mode)
+
     log_info_if_debug("testing https://api.company-information.service.gov.uk/company/1234", debug_mode)
     test_responsea = requests.get("https://api.company-information.service.gov.uk/company/1234", timeout=50)
     log_info_if_debug(str(test_responsea.status_code), debug_mode)
