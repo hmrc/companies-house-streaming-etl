@@ -46,7 +46,6 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
     log_info_if_debug(f"max allowed time: {max_allowed_time}", debug_mode)
 
     r = httpx.get("https://download.companieshouse.gov.uk")
-    log_info_if_debug("after test req1", debug_mode)
     # log_info_if_debug(str(r.content), debug_mode)
     log_info_if_debug(str(r.status_code), debug_mode)
 
@@ -54,37 +53,31 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
     r = requests.get('https://api.github.com/events')
     log_info_if_debug(str(r.status_code), debug_mode)
     # log_info_if_debug(str(r.text), debug_mode)
-    log_info_if_debug("after test req", debug_mode)
-
-    log_info_if_debug("testing https://www.python.org/", debug_mode)
-    r = requests.get('https://www.python.org/', timeout=50)
-    log_info_if_debug(str(r.status_code), debug_mode)
-    # log_info_if_debug(str(r.text), debug_mode)
-    log_info_if_debug("after test req2", debug_mode)
 
     log_info_if_debug("testing https://aws.amazon.com/", debug_mode)
     test_responsex = requests.get("https://aws.amazon.com/", timeout=50)
     log_info_if_debug(str(test_responsex.status_code), debug_mode)
     # log_info_if_debug(str(test_responsex.text), debug_mode)
-    log_info_if_debug("test_0", debug_mode)
+
+    log_info_if_debug("testing https://www.python.org/", debug_mode)
+    r = requests.get('https://www.python.org/', timeout=50)
+    log_info_if_debug(str(r.status_code), debug_mode)
+    # log_info_if_debug(str(r.text), debug_mode)
 
     log_info_if_debug("testing https://catfact.ninja/fact", debug_mode)
     test_responsey = requests.get("https://catfact.ninja/fact", timeout=50)
     log_info_if_debug(str(test_responsey.status_code), debug_mode)
     log_info_if_debug(str(test_responsey.text), debug_mode)
-    log_info_if_debug("test_0.5", debug_mode)
 
     url_no_timepoint = stream_settings.api_url + channel
     log_info_if_debug(f"testing: {url_no_timepoint}", debug_mode)
     test_response0 = requests.get(url_no_timepoint, timeout=50)
     log_info_if_debug(str(test_response0.status_code), debug_mode)
     log_info_if_debug(str(test_response0.text), debug_mode)
-    log_info_if_debug("test_1", debug_mode)
 
     test_response1 = requests.get(stream_settings.api_url + channel, stream=True, timeout=50)
     log_info_if_debug(str(test_response1.status_code), debug_mode)
     log_info_if_debug(str(test_response1.text), debug_mode)
-    log_info_if_debug("test_2", debug_mode)
 
     # test_response = requests.get(stream_settings.api_url + channel, headers=auth_header, stream=True)
     # log_info_if_debug(str(test_response.status_code), debug_mode)
