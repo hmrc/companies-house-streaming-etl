@@ -34,7 +34,7 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
     latest_timepoint = 0  # used to keep track of where to continue when re-connecting
     # Lambda max runtime is 900s, assume 300s required to start streaming and write to s3 after done
     max_allowed_time = datetime.now() + timedelta(seconds=600)
-    logging.warning(f"max allowed time: {max_allowed_time}", debug_mode)
+    logging.warning(f"max allowed time: {max_allowed_time}")
 
     try:
         with created_session.get(url, headers=auth_header, stream=True) as api_responses:
