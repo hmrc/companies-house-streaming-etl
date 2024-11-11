@@ -37,7 +37,7 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
 
     # write_path = data_directory(stream_settings) + "/" + str(int(time.time()))  # filenames by epoch second
 
-    log_info_if_debug(f"write path: {write_path}", debug_mode)
+    # log_info_if_debug(f"write path: {write_path}", debug_mode)
 
     response_count = 0
     latest_timepoint = 0  # used to keep track of where to continue when re-connecting
