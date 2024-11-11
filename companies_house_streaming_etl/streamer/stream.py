@@ -6,13 +6,10 @@ import smart_open
 import orjson
 import logging
 from datetime import datetime, timedelta
-import time
-import base64
 
 from companies_house_streaming_etl import SettingsLoader, Settings
 from companies_house_streaming_etl.local_config.local_conf import data_directory
 
-import httpx  # test to see why request lib isn't working - maybe VPC problem
 
 class RateLimited(Exception):
     pass
@@ -33,16 +30,10 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
         "authorization": f"Basic {stream_settings.encoded_key}"
     }
 
-    log_info_if_debug(f"auth header: {auth_header}", debug_mode)
-
-    # write_path = data_directory(stream_settings) + "/" + str(int(time.time()))  # filenames by epoch second
-
-    # log_info_if_debug(f"write path: {write_path}", debug_mode)
-
     response_count = 0
     latest_timepoint = 0  # used to keep track of where to continue when re-connecting
-    # Lambda max runtime is 900s, assume 200s required to start streaming and write to s3 after done
-    max_allowed_time = datetime.now() + timedelta(seconds=100)
+    # Lambda max runtime is 900s, assume 300s required to start streaming and write to s3 after done
+    max_allowed_time = datetime.now() + timedelta(seconds=600)
     log_info_if_debug(f"max allowed time: {max_allowed_time}", debug_mode)
 
     try:
@@ -56,16 +47,15 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
                         log_info_if_debug("lambda will time out, restart instead", True)
                         created_session.close()
                         raise LambdaWillExpireSoon
-                    # else:
-                    #     pass
-                    #     # log_info_if_debug(
-                    #     #     f"time not yet up, currently have this much remaining: {max_allowed_time - datetime.now()}",
-                    #     #     debug_mode)
+                    if response and (response == "\n"):
+                        log_info_if_debug("heartbeat received from API", debug_mode)
                     if response and (response != "\n"):
                         response_count += 1
-                        # log_info_if_debug(response, debug_mode)
                         response_timepoint = orjson.loads(response)["event"]["timepoint"]
-                        with smart_open.open(data_directory(stream_settings) + "/" + str(response_timepoint), 'wb') as file_out:
+                        # writing individually instead of streaming - exception causes no data written to s3
+                        #   possible (smart_open bug)
+                        with smart_open.open(data_directory(stream_settings) + "/data/" + str(response_timepoint),
+                                             'wb') as file_out:
                             file_out.write(response)
                             # file_out.write(b"\n")
                         if response_timepoint > latest_timepoint:
@@ -110,9 +100,6 @@ def read_timepoint(settings: Settings) -> str:
 def log_info_if_debug(log_string: str, debug: bool):
     if debug:
         logger = logging.getLogger(__name__)
-        logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO,
-                            force=True,
-                            datefmt='%Y-%m-%d  %H:%M:%S')
         logger.info(log_string)
 
 
@@ -127,17 +114,20 @@ def start_streaming(_="", _2=""):
     :return:
     """
     logger = logging.getLogger(__name__)
-    logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO, force=True,
-                        datefmt='%Y-%m-%d  %H:%M:%S')
-    logger.info("loading stream settings")
     settings = SettingsLoader.load_settings()
 
     channel = "companies"  # TODO include more channels
 
     if settings.debug_mode == "true":
         debug_mode = True
+        logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO,
+                            force=True,
+                            datefmt='%Y-%m-%d  %H:%M:%S')
         logger.info("debug mode set")
     else:
         debug_mode = False
+        logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.ERROR,
+                            force=True,
+                            datefmt='%Y-%m-%d  %H:%M:%S')
 
     stream(settings, channel, debug_mode)
