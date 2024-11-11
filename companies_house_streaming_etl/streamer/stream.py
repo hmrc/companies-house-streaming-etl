@@ -42,66 +42,8 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
     response_count = 0
     latest_timepoint = 0  # used to keep track of where to continue when re-connecting
     # Lambda max runtime is 900s, assume 200s required to start streaming and write to s3 after done
-    max_allowed_time = datetime.now() + timedelta(seconds=700)
+    max_allowed_time = datetime.now() + timedelta(seconds=100)
     log_info_if_debug(f"max allowed time: {max_allowed_time}", debug_mode)
-
-    # r = httpx.get("https://download.companieshouse.gov.uk")
-    # # log_info_if_debug(str(r.content), debug_mode)
-    # log_info_if_debug(str(r.status_code), debug_mode)
-
-    # log_info_if_debug("testing https://api.company-information.service.gov.uk/company/1234 with httpx", debug_mode)
-    # r = httpx.get("https://api.company-information.service.gov.uk/company/1234")
-    # # log_info_if_debug(str(r.content), debug_mode)
-    # log_info_if_debug(str(r.status_code), debug_mode)
-    #
-    # log_info_if_debug("testing https://api.company-information.service.gov.uk/company/1234", debug_mode)
-    # test_responsea = requests.get("https://api.company-information.service.gov.uk/company/1234", timeout=50)
-    # log_info_if_debug(str(test_responsea.status_code), debug_mode)
-    # log_info_if_debug(str(test_responsea.text), debug_mode)
-    #
-    # log_info_if_debug("testing https://download.companieshouse.gov.uk", debug_mode)
-    # test_responsez = requests.get("https://download.companieshouse.gov.uk", timeout=50)
-    # log_info_if_debug(str(test_responsez.status_code), debug_mode)
-    # log_info_if_debug(str(test_responsez.text), debug_mode)
-
-    # log_info_if_debug("testing https://catfact.ninja/fact", debug_mode)
-    # test_responsey = requests.get("https://catfact.ninja/fact", timeout=50)
-    # log_info_if_debug(str(test_responsey.status_code), debug_mode)
-    # log_info_if_debug(str(test_responsey.text), debug_mode)
-
-    # log_info_if_debug("testing https://api.github.com/events", debug_mode)
-    # r = requests.get('https://api.github.com/events')
-    # log_info_if_debug(str(r.status_code), debug_mode)
-    # # log_info_if_debug(str(r.text), debug_mode)
-    #
-    # log_info_if_debug("testing https://aws.amazon.com/", debug_mode)
-    # test_responsex = requests.get("https://aws.amazon.com/", timeout=50)
-    # log_info_if_debug(str(test_responsex.status_code), debug_mode)
-    # # log_info_if_debug(str(test_responsex.text), debug_mode)
-    #
-    # log_info_if_debug("testing https://www.python.org/", debug_mode)
-    # r = requests.get('https://www.python.org/', timeout=50)
-    # log_info_if_debug(str(r.status_code), debug_mode)
-    # # log_info_if_debug(str(r.text), debug_mode)
-
-
-    # url_no_timepoint = stream_settings.api_url + channel
-    # log_info_if_debug(f"testing: {url_no_timepoint}", debug_mode)
-    # test_response0 = requests.get(url_no_timepoint, timeout=50)
-    # log_info_if_debug(str(test_response0.status_code), debug_mode)
-    # log_info_if_debug(str(test_response0.text), debug_mode)
-    #
-    # test_response1 = requests.get(stream_settings.api_url + channel, stream=True, timeout=50)
-    # log_info_if_debug(str(test_response1.status_code), debug_mode)
-    # log_info_if_debug(str(test_response1.text), debug_mode)
-
-    # test_response = requests.get(stream_settings.api_url + channel, headers=auth_header, stream=True)
-    # log_info_if_debug(str(test_response.status_code), debug_mode)
-    # for test_item in test_response:
-    #     if test_item:
-    #         log_info_if_debug("in test_response", debug_mode)
-    #         log_info_if_debug(str(test_item), debug_mode)
-    #         break
 
     try:
         log_info_if_debug(f"in try", debug_mode)
@@ -111,7 +53,7 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
                 raise RateLimited
             elif api_responses.status_code == 200:
                 log_info_if_debug("200 response", debug_mode)
-                with smart_open.open(write_path, 'wb') as file_out:
+                with smart_open.open(write_path, 'w') as file_out:
                     log_info_if_debug("smart open", debug_mode)
                     for response in api_responses.iter_lines():
                         if datetime.now() > max_allowed_time:
@@ -119,17 +61,18 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
                             created_session.close()
                             raise LambdaWillExpireSoon
                         else:
-                            log_info_if_debug(
-                                f"time not yet up, currently have this much remaining: {max_allowed_time - datetime.now()}",
-                                debug_mode)
+                            pass
+                            # log_info_if_debug(
+                            #     f"time not yet up, currently have this much remaining: {max_allowed_time - datetime.now()}",
+                            #     debug_mode)
                         if response and (response != "\n"):
                             response_count += 1
-                            log_info_if_debug(response, debug_mode)
+                            # log_info_if_debug(response, debug_mode)
                             file_out.write(response)
                             file_out.write(b"\n")
                             response_timepoint = orjson.loads(response)["event"]["timepoint"]
                             if response_timepoint > latest_timepoint:
-                                log_info_if_debug("new latest timepoint: ", response_timepoint)
+                                log_info_if_debug(f"new latest timepoint: {response_timepoint}", debug_mode)
                                 latest_timepoint = response_timepoint
             else:
                 log_info_if_debug(f"non-200 status code: {api_responses.status_code}", True)
