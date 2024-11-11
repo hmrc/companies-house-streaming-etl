@@ -7,7 +7,7 @@ import yaml
 import envtoml
 from pydantic import BaseModel
 
-from companies_house_streaming_etl.streamer.credstash_loader import CredstashLoader
+import credstash
 
 
 class Settings(BaseModel):
@@ -34,12 +34,14 @@ class SettingsLoader:
 
         if run_settings.write_location == "local":
             run_settings.encoded_key = base64.b64encode(
-                    bytes(yaml.safe_load(open(yaml_file_path, 'r').read())['stream_key'] + ':',
-                          'utf-8')
-                ).decode('utf-8')
+                bytes(yaml.safe_load(open(yaml_file_path, 'r').read())['stream_key'] + ':',
+                      'utf-8')
+            ).decode('utf-8')
         else:
-            credstash_loader = CredstashLoader
-            run_settings.encoded_key = credstash_loader.companies_house_streaming_api_key
+            streamkey = credstash.getSecret(
+                name="companies_house_streaming_api_key", context={"role": "companies_house"}, profile_name=None
+            )
+            run_settings.encoded_key = base64.b64encode(bytes(str(streamkey) + ':', 'utf-8')).decode('utf-8')
 
         return run_settings
 
