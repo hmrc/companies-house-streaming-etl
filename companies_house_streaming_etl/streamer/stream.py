@@ -35,7 +35,7 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
 
     log_info_if_debug(f"auth header: {auth_header}", debug_mode)
 
-    write_path = data_directory(stream_settings) + "/" + str(int(time.time()))  # filenames by epoch second
+    # write_path = data_directory(stream_settings) + "/" + str(int(time.time()))  # filenames by epoch second
 
     log_info_if_debug(f"write path: {write_path}", debug_mode)
 
@@ -46,34 +46,31 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
     log_info_if_debug(f"max allowed time: {max_allowed_time}", debug_mode)
 
     try:
-        log_info_if_debug(f"in try", debug_mode)
         with created_session.get(url, headers=auth_header, stream=True) as api_responses:
             log_info_if_debug(f"response status code: {api_responses.status_code}", debug_mode)
             if api_responses.status_code == 429:
                 raise RateLimited
             elif api_responses.status_code == 200:
-                log_info_if_debug("200 response", debug_mode)
-                with smart_open.open(write_path, 'w') as file_out:
-                    log_info_if_debug("smart open", debug_mode)
-                    for response in api_responses.iter_lines():
-                        if datetime.now() > max_allowed_time:
-                            log_info_if_debug("lambda will time out, restart instead", True)
-                            created_session.close()
-                            raise LambdaWillExpireSoon
-                        else:
-                            pass
-                            # log_info_if_debug(
-                            #     f"time not yet up, currently have this much remaining: {max_allowed_time - datetime.now()}",
-                            #     debug_mode)
-                        if response and (response != "\n"):
-                            response_count += 1
-                            # log_info_if_debug(response, debug_mode)
+                for response in api_responses.iter_lines():
+                    if datetime.now() > max_allowed_time:
+                        log_info_if_debug("lambda will time out, restart instead", True)
+                        created_session.close()
+                        raise LambdaWillExpireSoon
+                    # else:
+                    #     pass
+                    #     # log_info_if_debug(
+                    #     #     f"time not yet up, currently have this much remaining: {max_allowed_time - datetime.now()}",
+                    #     #     debug_mode)
+                    if response and (response != "\n"):
+                        response_count += 1
+                        # log_info_if_debug(response, debug_mode)
+                        response_timepoint = orjson.loads(response)["event"]["timepoint"]
+                        with smart_open.open(data_directory(stream_settings) + "/" + str(response_timepoint), 'wb') as file_out:
                             file_out.write(response)
-                            file_out.write(b"\n")
-                            response_timepoint = orjson.loads(response)["event"]["timepoint"]
-                            if response_timepoint > latest_timepoint:
-                                log_info_if_debug(f"new latest timepoint: {response_timepoint}", debug_mode)
-                                latest_timepoint = response_timepoint
+                            # file_out.write(b"\n")
+                        if response_timepoint > latest_timepoint:
+                            # log_info_if_debug(f"new latest timepoint: {response_timepoint}", debug_mode)
+                            latest_timepoint = response_timepoint
             else:
                 log_info_if_debug(f"non-200 status code: {api_responses.status_code}", True)
                 raise ConnectionError
