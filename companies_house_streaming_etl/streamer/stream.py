@@ -146,7 +146,7 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
 
 def write_timepoint(settings: Settings, timepoint: str):
     if settings.write_location == "s3":
-        s3 = boto3.resource('s3')
+        s3 = boto3.client('s3')
         s3.put_object(Body=timepoint, Bucket=settings.write_bucket, Key=settings.write_prefix + "/timepoint")
     elif settings.write_location == "local":
         with open(data_directory(settings) + "/timepoint", "w+") as timepoint_file:
