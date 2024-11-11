@@ -33,7 +33,7 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
     response_count = 0
     latest_timepoint = 0  # used to keep track of where to continue when re-connecting
     # Lambda max runtime is 900s, assume 300s required to start streaming and write to s3 after done
-    max_allowed_time = datetime.now() + timedelta(seconds=50)
+    max_allowed_time = datetime.now() + timedelta(seconds=600)
     log_info_if_debug(f"max allowed time: {max_allowed_time}", debug_mode)
 
     try:
@@ -55,7 +55,7 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
                     if response and (response != "\n"):
                         response_count += 1
                         response_timepoint = orjson.loads(response)["event"]["timepoint"]
-                        # writing individually instead of streaming - exception causes no data_old written to s3
+                        # writing individually instead of streaming - exception causes no data written to s3
                         #   possible (smart_open bug)
                         with smart_open.open(data_directory(stream_settings) + "/data/" + str(response_timepoint),
                                              'wb') as file_out:
