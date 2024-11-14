@@ -6,7 +6,7 @@ import smart_open
 import orjson
 import logging
 from datetime import datetime, timedelta
-
+from typing import Any, Dict
 from requests.exceptions import ChunkedEncodingError
 
 from companies_house_streaming_etl import SettingsLoader, Settings
@@ -23,9 +23,13 @@ class LambdaWillExpireSoon(Exception):
 
 def stream(stream_settings: Settings, channel: str, debug_mode: bool):
     log_info_if_debug(f"creating session", debug_mode)
-    created_session = requests.session()  # TODO: use tenacity.retry()
+    created_session = requests.session()
 
-    url = stream_settings.api_url + channel + "?timepoint=" + read_timepoint(stream_settings)
+    current_timepoint = read_timepoint(stream_settings, channel)
+
+    logging.warning(f"starting from timepoint: ${current_timepoint}")
+
+    url = stream_settings.api_url + channel + "?timepoint=" + current_timepoint
     log_info_if_debug(f"url: {url}", debug_mode)
 
     auth_header = {
@@ -60,7 +64,7 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
                             response_timepoint = orjson.loads(response)["event"]["timepoint"]
                             # writing individually instead of streaming - exception causes no data written to s3
                             #   possible (smart_open bug)
-                            with smart_open.open(data_directory(stream_settings) + "/data/" + str(response_timepoint),
+                            with smart_open.open(data_directory(stream_settings) + f"/{channel}" + "/data/" + str(response_timepoint),
                                                  'wb') as file_out:
                                 file_out.write(response)
                             if response_timepoint > latest_timepoint:
@@ -77,29 +81,31 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
         logging.warning(f"number of responses from {channel} written to s3: {response_count}")
         logging.warning(f"new latest timepoint: {latest_timepoint}")
         # write updated timepoint file
-        write_timepoint(stream_settings, str(latest_timepoint))
+        write_timepoint(stream_settings, str(latest_timepoint), channel)
     except RateLimited:
         logging.error("status code 429 we are rate limited - hold off until next scheduled lambda")
 
 
-def write_timepoint(settings: Settings, timepoint: str):
+def write_timepoint(settings: Settings, timepoint: str, channel: str):
     if settings.write_location == "s3":
         s3 = boto3.client('s3')
-        s3.put_object(Body=timepoint, Bucket=settings.write_bucket, Key=settings.write_prefix + "/timepoint")
+        s3.put_object(Body=timepoint, Bucket=settings.write_bucket,
+                      Key=settings.write_prefix + f"/{channel}" + "/timepoint")
     elif settings.write_location == "local":
-        with open(data_directory(settings) + "/timepoint", "w+") as timepoint_file:
+        with open(data_directory(settings) + f"/{channel}" + "/timepoint", "w+") as timepoint_file:
             timepoint_file.write(timepoint)
     else:
         raise NotImplementedError
 
 
-def read_timepoint(settings: Settings) -> str:
+def read_timepoint(settings: Settings, channel: str) -> str:
     if settings.write_location == "s3":
         s3 = boto3.resource('s3')
         return str(
-            s3.Object(settings.write_bucket, settings.write_prefix + "/timepoint").get()['Body'].read().decode('utf-8'))
+            s3.Object(settings.write_bucket, settings.write_prefix + f"/{channel}" + "/timepoint").get()[
+                'Body'].read().decode('utf-8'))
     elif settings.write_location == "local":
-        with open(data_directory(settings) + "/timepoint", "r") as timepoint_file:
+        with open(data_directory(settings) + f"/{channel}" + "/timepoint", "r") as timepoint_file:
             return timepoint_file.read()
     else:
         raise NotImplementedError
@@ -111,20 +117,19 @@ def log_info_if_debug(log_string: str, debug: bool):
         logger.info(log_string)
 
 
-def start_streaming(_="", _2=""):
+def start_streaming(event: Dict[Any, Any] = {"channel": "companies"}, _=""):
     """
-    Connect to the streaming api with timepoint and store all valid responses in a list for 700s (lambda timeout is 900)
+    Connect to the streaming api with timepoint and store all valid responses for 600s (lambda timeout is 900)
     Write to S3 as we go
     keep track of the latest [event][timepoint]
-    write to s3 (a file named after the latest timepoint and new line delimited with all responses)
     update a timepoint file to contain the latest timepoint
-
-    :return:
+    :param event: Dict containing channel type see available channels here:
+        https://developer-specs.company-information.service.gov.uk/api.ch.gov.uk-specifications/swagger-2.0/spec/streaming.json
+        (default channel parameter is 'companies' for local testing)
+    :param _: Context parameter not used
     """
     logger = logging.getLogger(__name__)
     settings = SettingsLoader.load_settings()
-
-    channel = "companies"  # TODO include more channels
 
     if settings.debug_mode == "true":
         debug_mode = True
@@ -134,8 +139,17 @@ def start_streaming(_="", _2=""):
         logger.info("debug mode set")
     else:
         debug_mode = False
+        # Setting log level to warning in non-debug mode to avoid extensive smart-open logs (INFO level)
         logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.WARNING,
                             force=True,
                             datefmt='%Y-%m-%d  %H:%M:%S')
+
+    logger.warning("event:")
+    logger.warning(event)
+
+    try:
+        channel = event["channel"]
+    except KeyError:
+        raise ValueError('required parameter "channel" not found')
 
     stream(settings, channel, debug_mode)

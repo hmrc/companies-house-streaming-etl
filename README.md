@@ -29,7 +29,7 @@ First please make sure that you:
 * have the [Poetry](https://python-poetry.org/) Python dependency manager installed by following instructions
   [here](https://python-poetry.org/docs/#osx--linux--bashonwindows-install-instructions)
 
-### Create a file at `target/data-outputs/timepoint` with the starting timepoint
+### Create a file at `target/data-outputs/<channel-name>/timepoint` with the starting timepoint
 You can get the current CH stream timepoint by calling the service or choose one in the past from the latest bulk data.
 Note: this is not epoch-time!
 It should look something like this:
