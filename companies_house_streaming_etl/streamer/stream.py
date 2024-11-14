@@ -7,6 +7,8 @@ import orjson
 import logging
 from datetime import datetime, timedelta
 
+from requests.exceptions import ChunkedEncodingError
+
 from companies_house_streaming_etl import SettingsLoader, Settings
 from companies_house_streaming_etl.local_config.local_conf import data_directory
 
@@ -45,23 +47,28 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
                 logging.error(f"the requested timepoint is too old - (use new bulk data timepoint instead)")
                 raise ConnectionError
             elif api_responses.status_code == 200:
-                for response in api_responses.iter_lines():
-                    if datetime.now() > max_allowed_time:
-                        log_info_if_debug("lambda will time out, restart instead", True)
-                        created_session.close()
-                        raise LambdaWillExpireSoon
-                    if response and (response == "\n"):
-                        logging.warning("heartbeat received from API")
-                    if response and (response != "\n"):
-                        response_count += 1
-                        response_timepoint = orjson.loads(response)["event"]["timepoint"]
-                        # writing individually instead of streaming - exception causes no data written to s3
-                        #   possible (smart_open bug)
-                        with smart_open.open(data_directory(stream_settings) + "/data/" + str(response_timepoint),
-                                             'wb') as file_out:
-                            file_out.write(response)
-                        if response_timepoint > latest_timepoint:
-                            latest_timepoint = response_timepoint
+                try:
+                    for response in api_responses.iter_lines():
+                        if datetime.now() > max_allowed_time:
+                            log_info_if_debug("lambda will time out, restart instead", True)
+                            created_session.close()
+                            raise LambdaWillExpireSoon
+                        if response and (response == "\n" or response == b'' or response == b'\n'):
+                            logging.warning("heartbeat received from API")
+                        if response and (response != "\n"):
+                            response_count += 1
+                            response_timepoint = orjson.loads(response)["event"]["timepoint"]
+                            # writing individually instead of streaming - exception causes no data written to s3
+                            #   possible (smart_open bug)
+                            with smart_open.open(data_directory(stream_settings) + "/data/" + str(response_timepoint),
+                                                 'wb') as file_out:
+                                file_out.write(response)
+                            if response_timepoint > latest_timepoint:
+                                latest_timepoint = response_timepoint
+                except ChunkedEncodingError as ex:
+                    logging.warning(f"Invalid chunk encoding {str(ex)}")
+                    logging.warning("ChunkedEncodingError, writing what we have so far even though time remaining")
+                    raise LambdaWillExpireSoon
             else:
                 logging.error(f"non-200 status code: {api_responses.status_code}")
                 raise ConnectionError
