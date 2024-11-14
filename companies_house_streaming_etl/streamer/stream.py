@@ -59,7 +59,7 @@ def stream(stream_settings: Settings, channel: str, debug_mode: bool):
                             raise LambdaWillExpireSoon
                         if response and (response == "\n" or response == b'' or response == b'\n'):
                             logging.warning("heartbeat received from API")
-                        if response and (response != "\n"):
+                        elif response:
                             response_count += 1
                             response_timepoint = orjson.loads(response)["event"]["timepoint"]
                             # writing individually instead of streaming - exception causes no data written to s3
