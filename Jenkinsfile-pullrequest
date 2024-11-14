@@ -9,6 +9,6 @@ pipeline {
         sh('make ci/build')
       }
     }
-  # Put tests here
+  // Put tests here
   }
 }
