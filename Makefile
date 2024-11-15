@@ -1,5 +1,5 @@
 ECR_URL=727065427295.dkr.ecr.eu-west-2.amazonaws.com
-IMAGE_NAME=cip-insights-reputation/companies-house-streaming-etl-lambda
+IMAGE_NAME=cip-insights-reputation/companies-house-streaming-lambda
 TEST_IMAGE_NAME=$(IMAGE_NAME)-test
 SHELL=/bin/bash
 
@@ -12,6 +12,12 @@ build:
 # only used for local testing
 run-local:
 	docker run --env CH_DEBUG="true" --env CH_WRITE_LOCATION="local" --env CH_WRITE_BUCKET="n/a" --env CH_WRITE_PREFIX="n/a" -i $(IMAGE_NAME)
+create-requirements-txt:
+	poetry update
+	poetry install
+	poetry export -f requirements.txt --without-hashes > unusedrequirements.txt
+	sed 's/;.*//' unusedrequirements.txt > requirements.txt # remove python version requirement set by poetry (causing issues in CI)
+	rm unusedrequirements.txt
 
 # tests currently not implemented
 #test-build:

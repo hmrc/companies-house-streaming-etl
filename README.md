@@ -29,6 +29,15 @@ First please make sure that you:
 * have the [Poetry](https://python-poetry.org/) Python dependency manager installed by following instructions
   [here](https://python-poetry.org/docs/#osx--linux--bashonwindows-install-instructions)
 
+### Create a file at `target/data-outputs/<channel-name>/timepoint` with the starting timepoint
+You can get the current CH stream timepoint by calling the service or choose one in the past from the latest bulk data.
+Note: this is not epoch-time!
+It should look something like this:
+
+```timepoint
+86718982
+```
+
 Install poetry dependencies with:
 ```bash
 poetry install
@@ -46,10 +55,7 @@ CH_DEBUG="true" CH_WRITE_LOCATION="local" CH_WRITE_BUCKET="n/a" CH_WRITE_PREFIX=
 #### If dependencies have changed
 Ensure that the requirements file has been updated too (this is done to avoid complications with poetry in docker)
 ```bash
-poetry update
-```
-```bash
-poetry export -f requirements.txt --without-hashes > requirements.txt
+make create-requirements-txt
 ```
 
 make the docker image

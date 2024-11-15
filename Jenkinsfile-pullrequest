@@ -1,0 +1,14 @@
+#!/usr/bin/env groovy
+pipeline {
+  agent {
+      label 'commonagent'
+  }
+  stages {
+    stage('Build docker container') {
+      steps {
+        sh('make ci/build')
+      }
+    }
+  // Put tests here
+  }
+}

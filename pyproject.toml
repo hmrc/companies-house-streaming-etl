@@ -26,6 +26,7 @@ boto3 = "*"
 envtoml = "*"
 orjson = "*"
 smart-open = "*"
+typing-extensions = "*"
 
 [tool.poetry.scripts]
 run-streamer = "companies_house_streaming_etl.streamer.stream:start_streaming"
