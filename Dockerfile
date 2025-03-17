@@ -1,5 +1,9 @@
 FROM public.ecr.aws/lambda/python:3.10
 
+RUN curl -O https://lambda-insights-extension.s3-ap-northeast-1.amazonaws.com/amazon_linux/lambda-insights-extension.rpm && \
+    rpm -U lambda-insights-extension.rpm && \
+    rm -f lambda-insights-extension.rpm
+
 # Copy requirements.txt
 COPY requirements.txt ${LAMBDA_TASK_ROOT}
 
