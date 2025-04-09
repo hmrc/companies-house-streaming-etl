@@ -1,7 +1,7 @@
 
 # companies-house-streaming-etl
 
-Companies House Streaming API used with AWS Lambda. Data is later ingested into hudi with our ETL
+Connect to Companies House Streaming API - used with AWS Lambda. Data is later ingested into a hudi table with our ETL
 
 - See API documentation [here](https://developer-specs.company-information.service.gov.uk/companies-house-public-data-api/reference)
 
