@@ -4,7 +4,7 @@ TEST_IMAGE_NAME=$(IMAGE_NAME)-test
 SHELL=/bin/bash
 
 version_file := .version
-VERSION := $(shell cat ${version_file})
+VERSION := 1.0.3.lamda.insights
 
 build:
 	docker build --platform linux/amd64 --file Dockerfile -t $(IMAGE_NAME) .

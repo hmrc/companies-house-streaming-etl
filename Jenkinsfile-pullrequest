@@ -9,6 +9,15 @@ pipeline {
         sh('make ci/build')
       }
     }
+    stage('Publish and tag docker container') {
+      steps {
+        sh('make ci/release')
+        script {
+            build_version = readFile ".version"
+            currentBuild.description = "Release: v" + build_version
+        }
+      }
+    }
   // Put tests here
   }
 }
