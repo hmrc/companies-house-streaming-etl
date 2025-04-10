@@ -7,7 +7,7 @@ version_file := .version
 VERSION := $(shell cat ${version_file})
 
 build:
-	docker build --file Dockerfile -t $(IMAGE_NAME) .
+	docker build --platform linux/amd64 --file Dockerfile -t $(IMAGE_NAME) .
 
 # only used for local testing
 run-local:
