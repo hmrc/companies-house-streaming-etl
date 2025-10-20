@@ -8,7 +8,9 @@ import envtoml
 from pydantic import BaseModel
 
 import credstash
-
+import botocore
+import botocore.session
+from aws_secretsmanager_caching import SecretCache, SecretCacheConfig
 
 class Settings(BaseModel):
     encoded_key: str
@@ -38,10 +40,17 @@ class SettingsLoader:
                       'utf-8')
             ).decode('utf-8')
         else:
-            streamkey = credstash.getSecret(
-                name="companies_house_streaming_api_key", context={"role": "companies_house"}, profile_name=None
-            )
-            run_settings.encoded_key = base64.b64encode(bytes(str(streamkey) + ':', 'utf-8')).decode('utf-8')
+            client = botocore.session.get_session().create_client('secretsmanager')
+            cache_config = SecretCacheConfig()
+            cache = SecretCache(config=cache_config, client=client)
+            
+            api_key = cache.get_secret_string("cip_insights/companies_house/companies_house_streaming_api_key")
+            
+            if api_key is None:
+                api_key = credstash.getSecret(
+                    name="companies_house_streaming_api_key", context={"role": "companies_house"}, profile_name=None
+                )
+            run_settings.encoded_key = base64.b64encode(bytes(str(api_key) + ':', 'utf-8')).decode('utf-8')
 
         return run_settings
 

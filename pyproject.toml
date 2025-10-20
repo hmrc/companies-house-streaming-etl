@@ -16,6 +16,9 @@ python = "3.10.10"
 # credstsh for retrieving the API key
 credstash = "*"
 
+# Secret Manager Cache for caching the API key
+aws_secretsmanager_caching = "*"
+
 # tenacity for dealing with retries
 # tenacity = "*"
 
